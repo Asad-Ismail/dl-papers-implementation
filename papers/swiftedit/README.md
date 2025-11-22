@@ -1,24 +1,24 @@
 # SwiftEdit: Lightning Fast Text-Guided Image Editing via One-Step Diffusion (Unofficial Reproduction)
 
-⚠️ **Implementation Status: Partial/In Development**
+⚠️ **Implementation Status: Active Development**
 
-This repository contains a **partial implementation** of SwiftEdit, bootstrapped with DeepCode. Currently available:
+This repository contains an implementation of SwiftEdit, bootstrapped with DeepCode and refined through human review.
 
 **✅ Implemented:**
 - Model architecture definitions (VAE, CLIP, Generator, IP-Adapter, Inversion Network)
+- Training implementations (Stage 1: Synthetic, Stage 2: Real)
+- Dataset loaders (synthetic and real data pipelines)
 - Loss function modules (DISTS, CLIP scores, PSNR/MSE)
-- Configuration templates (YAML configs for training/inference)
-- Shell script templates for training and evaluation
-- Utility modules (checkpoints, logging, schedulers)
+- Configuration system (YAML configs for training/inference)
+- Training scripts and utilities
+- Checkpoint management and logging
 
-**❌ Not Yet Implemented:**
-- Training loop implementations (trainer_stage1.py, trainer_stage2.py)
-- Dataset loaders (dataset_synthetic.py, dataset_real.py)
-- Inference pipeline implementation
-- Evaluation scripts
+**⚠️ In Progress:**
+- Inference pipeline (editing implementation)
+- Evaluation scripts (PieBench metrics)
 - Model weights and pre-trained checkpoints
 
-This is a work-in-progress reproduction. The architecture and supporting code are in place, but the training and inference implementations need to be completed.
+**Note:** Training scripts are functional. Inference and evaluation are under active development.
 
 
 ## Table of Contents
@@ -43,6 +43,19 @@ uv pip install -e .
 
 # Verify installation
 python -c "import swiftedit; print('SwiftEdit package installed')"
+```
+
+## Quick Start - Training
+
+```bash
+# Stage 1 Training (Synthetic)
+bash scripts/train_stage1.sh -d configs/defaults.yaml -c configs/stage1.yaml
+
+# Stage 2 Training (Real)
+bash scripts/train_stage2.sh -d configs/defaults.yaml -c configs/stage2.yaml
+
+# Or run directly with Python
+python -m swiftedit.train.stage1.trainer_stage1 --defaults configs/defaults.yaml --config configs/stage1.yaml
 ```
 
 ## Requirements
@@ -91,22 +104,31 @@ The following modules are implemented and ready for integration:
 - `swiftedit.schedulers.noise_scheduler` - Diffusion noise scheduling
 
 
-## Development Status
+## Training
 
-**What's Missing:**
-- Training loop implementations (need to create `trainer_stage1.py`, `trainer_stage2.py`, dataset loaders)
-- Inference pipeline implementation
-- Evaluation script implementations
-- Model weights/checkpoints
+Training is implemented for both stages. See configuration files in `configs/` for hyperparameters.
 
-**How to Contribute:**
-If you want to complete this implementation:
-1. Implement training scripts in `swiftedit/train/stage1/` and `swiftedit/train/stage2/`
-2. Implement dataset loaders for synthetic and real data
-3. Implement the inference pipeline in `swiftedit/edit/inference.py`
-4. Test with the provided configuration files
+### Stage 1: Synthetic Training
+Trains the inversion network and IP-Adapter on synthetic latent pairs.
 
-The architecture is defined and the infrastructure (configs, scripts, utilities) is in place - it needs the core training and inference logic.
+```bash
+bash scripts/train_stage1.sh -d configs/defaults.yaml -c configs/stage1.yaml
+```
+
+### Stage 2: Real Data Training
+Fine-tunes on real images with perceptual losses.
+
+```bash
+bash scripts/train_stage2.sh -d configs/defaults.yaml -c configs/stage2.yaml
+```
+
+## Next Steps
+
+**To complete this implementation:**
+1. ✅ Training scripts - Implemented
+2. ⚠️ Inference pipeline - Implement `swiftedit/edit/inference.py`
+3. ⚠️ Evaluation scripts - Complete PieBench evaluation
+4. 📦 Pre-trained weights - Train and release checkpoints
 
 
 ## Acknowledgments and License
