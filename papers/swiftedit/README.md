@@ -38,28 +38,21 @@ Note: If SwiftBrushv2 pretrained weights are not available, the repo defaults to
 
 
 ## Quickstart
+
 ```bash
 # 1) Create environment and install dependencies
 uv venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-uv pip install -r requirements.txt
+uv pip install -e .
 
-# 2) Download all required model assets (SDXL base/vae, OpenCLIP, one-step generator)
-bash scripts/download_models.sh --all -o assets
-
-# 3) (Optional) Source the paths manifest to set env variables for scripts
-source assets/model_paths.env
-
-# 4) Run a simple smoke test for inference
-bash scripts/run_edit.sh \
-  --image path/to/image.jpg \
-  --src-prompt "a cute corgi in a park" \
-  --edit-prompt "a cute corgi wearing sunglasses" \
-  -o corgi_edit.png
-
-# 5) Evaluate on a small PieBench subset (after placing the dataset)
-bash scripts/eval_piebench.sh --piebench-root data/piebench
+# 2) Verify installation
+python -c "import swiftedit; print('SwiftEdit installed successfully')"
 ```
+
+**Note**: Full inference and training scripts are under development. The current implementation provides:
+- Complete model architectures
+- Configuration templates
+- Loss functions and evaluation metrics
 
 
 ## Installation and Environment
@@ -131,42 +124,41 @@ A manifest `assets/model_paths.env` is created. You can `source` it or set paths
 ```
 
 
-## Smoke Tests
-Simple import checks:
-```bash
-python - <<'PY'
-import torch
-from swiftedit.models.generator.swiftbrushv2 import SwiftBrushV2
-from swiftedit.models.vae.vaesdxl import VAESDXL as _  # noqa: just import
-print("Imports OK; CUDA:", torch.cuda.is_available())
-PY
-```
-One-step generation + decode (requires assets configured):
-```python
-import torch, yaml
-from swiftedit.models.generator.swiftbrushv2 import SwiftBrushV2
-from swiftedit.models.vae.vae_sdxl import VAESDXL
-from swiftedit.models.clip.text_encoder import CLIPTextEncoder
-cfg = yaml.safe_load(open('swiftedit/configs/defaults.yaml'))
-G = SwiftBrushV2.from_config(cfg)
-VAE = VAESDXL.from_config(cfg)
-TE = CLIPTextEncoder.from_config(cfg)
+## Available Components
 
-B,H,W = 1, 64, 64  # latent H,W (images 512x512 => latents 64x64)
-eps = torch.randn(B, 4, H, W).to(G.conv_in.weight.device)
-text = TE(["a white cat"])
-z_hat = G(eps, text)
-x_hat = VAE.decode(z_hat)
-print(x_hat.shape, x_hat.min().item(), x_hat.max().item())
-```
+The following modules are implemented and ready for integration:
+
+**Models:**
+- `swiftedit.models.vae.vae_sdxl` - SDXL VAE encoder/decoder
+- `swiftedit.models.clip.text_encoder` - CLIP text encoder
+- `swiftedit.models.clip.image_encoder` - CLIP image encoder
+- `swiftedit.models.generator.swiftbrushv2` - One-step generator
+- `swiftedit.models.generator.generator_ip` - Generator with IP-Adapter
+- `swiftedit.models.inversion.inversion_net` - Inversion network
+- `swiftedit.models.ip_adapter` - IP-Adapter components
+
+**Losses:**
+- `swiftedit.losses.dists_loss` - Perceptual DISTS loss
+- `swiftedit.losses.clip_scores` - CLIP similarity metrics
+- `swiftedit.losses.psnr_mse` - PSNR and MSE metrics
+
+**Utilities:**
+- `swiftedit.utils.checkpoint` - Model checkpoint handling
+- `swiftedit.utils.logger` - Training logger
+- `swiftedit.schedulers.noise_scheduler` - Diffusion noise scheduling
 
 
 ## Training
-Training uses YAML configs under `swiftedit/configs/`. You can run via Python modules or provided shell scripts.
 
-### Stage 1 (Synthetic)
-Objective: Train inversion network Fθ and IP-Adapter image branch on synthetic latent pairs.
-- Losses: L_rec = ||z − ẑ||², L_regr = ||ε − ε̂||²; total L = L_rec + λ L_regr (λ=1)
+⚠️ **Note**: Training scripts are currently under development. The following components are available:
+- Model architectures (VAE, CLIP, Generator, IP-Adapter, Inversion Network)
+- Loss functions (DISTS, PSNR/MSE, CLIP scores)
+- Configuration files for Stage 1 and Stage 2 training
+
+Training implementation is planned for future updates. For now, this repository provides:
+1. Model architectures ready for training
+2. Inference pipeline components
+3. Evaluation metrics
 - Trainable: Fθ, IP-Adapter projector, IP-Adapter branch; others frozen
 - Batch size: 4 by default; iterations: 100k; EMA decay ≈ 0.999
 
@@ -209,45 +201,22 @@ Outputs:
 
 
 ## Inference (Editing)
-Edit an image with source and target prompts, using self-guided masks (or a provided mask) and ARaM scaling.
 
-Script:
-```bash
-bash scripts/run_edit.sh \
-  --image examples/corgi.jpg \
-  --src-prompt "a cute corgi in a park" \
-  --edit-prompt "a cute corgi wearing sunglasses" \
-  -o outputs/corgi_edit.png \
-  --inversion-ckpt checkpoints/stage2_ema.pt \
-  --s-y 1.0 --s-edit 0.3 --s-non-edit 1.5
-```
-Python API:
-```python
-import yaml, torch
-from swiftedit.edit.inference import edit_image
-cfg = yaml.safe_load(open('configs/inference.yaml'))
-res = edit_image(
-    image='examples/corgi.jpg',
-    prompt_src='a cute corgi in a park',
-    prompt_edit='a cute corgi wearing sunglasses',
-    cfg=cfg,
-)
-# Save
-from swiftedit.edit.inference import save_image
-save_image(res['x_edit'], 'outputs/corgi_edit.png')
-```
+⚠️ **Under Development**: Inference scripts are being implemented. The following modules are available:
+- `swiftedit.edit.inference` - Core inference pipeline (requires implementation)
+- `swiftedit.edit.mask_extractor` - Self-guided mask extraction
+- `swiftedit.edit.aram` - Attention Rescaling module
+
+Once complete, you'll be able to edit images using the Python API as described in the architecture.
 
 
 ## Evaluation (PieBench)
-Load the PieBench dataset and compute metrics: PSNR/MSE on unedited background, CLIP-Whole, CLIP-Edited, and runtime.
-```bash
-bash scripts/eval_piebench.sh \
-  --piebench-root data/piebench \
-  --inversion-ckpt checkpoints/stage2_ema.pt
-```
-Outputs: CSV under `results/` with per-sample metrics and summary.
 
-Self-guided masks are used by default; you can enable GT masks during editing via `--use-gt-masks` for small improvements.
+⚠️ **Under Development**: Evaluation scripts are being implemented.
+
+Available modules:
+- `swiftedit.eval.piebench_loader` - Dataset loader for PieBench
+- `swiftedit.eval.evaluate_piebench` - Evaluation metrics (PSNR, CLIP scores)
 
 
 ## Configuration Overview
