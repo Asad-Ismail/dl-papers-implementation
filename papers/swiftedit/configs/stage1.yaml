@@ -1,0 +1,176 @@
+# SwiftEdit Stage 1 (Synthetic) Training Configuration
+# This config specializes defaults.yaml for Stage 1 training on synthetic data.
+# It trains the inversion network Fθ together with the IP-Adapter image-conditioning
+# projector and branch, while freezing generator, VAE, and CLIP encoders.
+
+version: 1
+config_name: "stage1"
+description: "Stage 1 synthetic training: learn Fθ (z,c_y->ε̂) and IP-Adapter image branch on captions-driven synthetic latents"
+
+# System/runtime
+system:
+  device: "cuda"
+  dtype: "float16"
+  autocast: true
+  compile: false
+  seed: 42
+  deterministic: false
+
+# Paths (override these if you placed assets elsewhere)
+paths:
+  assets_dir: "assets"
+  sdxl_base_dir: "assets/sdxl-base"
+  sdxl_vae_dir: "assets/sdxl-vae"
+  openclip_dir: "assets/openclip"
+  one_step_gen_dir: "assets/one-step-gen"  # SwiftBrushv2 or SDXL-Turbo substitute
+  checkpoints_dir: "checkpoints"
+  logs_dir: "logs"
+  datasets:
+    journeydb_captions: "swiftedit/datasets/journeydb_captions.txt"
+    commoncanvas_root: "data/commoncanvas"
+    piebench_root: "data/piebench"
+
+# Models
+models:
+  vae:
+    type: "sdxl"
+    repo_dir: "${paths.sdxl_vae_dir}"
+    latent_channels: 4
+    scaling_factor: 0.18215
+    image_norm: "[-1,1]"
+    sample_size: 512
+    dtype: "float16"
+  clip:
+    text:
+      provider: "openclip"
+      model_name: "ViT-L-14"
+      pretrained: "laion2b_s32b_b82k"
+      max_length: 77
+      dtype: "float32"
+      freeze: true
+    image:
+      provider: "openclip"
+      model_name: "ViT-L-14"
+      pretrained: "laion2b_s32b_b82k"
+      dtype: "float32"
+      freeze: true
+  generator:
+    name: "swiftbrushv2"
+    repo_dir: "${paths.one_step_gen_dir}"
+    latent_channels: 4
+    text_embed_dim: 768
+    heads: 12
+    hidden_dim: 1536
+    dtype: "float16"
+    requires_text_condition: true
+  ip_adapter:
+    enabled: true
+    projector:
+      in_dim: 768
+      out_dim: 768
+      num_tokens: 4
+    branch:
+      trainable: true           # Train in Stage 1
+      freeze_in_stage2: true
+      default_scale_sx: 1.0
+  inversion_net:
+    name: "invnet_f_theta"
+    init_from_generator: true
+    dtype: "float16"
+    ema:
+      enabled: true
+      decay: 0.999
+
+# ARaM defaults (not used during training; relevant for inference)
+aram:
+  enabled: true
+  s_y: 1.0
+  s_edit: 0.3
+  s_non_edit: 1.5
+  mask:
+    blur_sigma: 1.0
+    soft_threshold: 0.0
+    clamp_min: 0.0
+    clamp_max: 1.0
+
+# Teacher scheduler (used in Stage 2; kept for consistency — not used in Stage 1)
+schedulers:
+  teacher:
+    unet_repo_dir: "${paths.sdxl_base_dir}"
+    scheduler_type: "DDPM"
+    num_train_timesteps: 1000
+    min_t: 0
+    max_t: 999
+    weighting: "uniform"
+
+# Training settings specific to Stage 1
+training:
+  stage1:
+    enabled: true
+    batch_size: 4
+    num_iters: 100000
+    lr: 1.0e-5
+    weight_decay: 1.0e-4
+    grad_clip_norm: null
+    ema_decay: 0.999
+    log_every: 100
+    save_every: 2000
+    image_resolution: 512
+    losses:
+      lambda_stage1: 1.0   # L_stage1 = L_rec + lambda_stage1 * L_regr
+    freeze:
+      generator: true      # Freeze G
+      vae: true            # Freeze VAE
+      clip_text: true      # Freeze text encoder
+      clip_image: true     # Freeze image encoder
+      ip_adapter_branch: false  # Train IP-Adapter branch
+      projector: false          # Train projector
+      inversion_net: false      # Train Fθ
+    dataset:
+      name: "JourneyDB"
+      captions_path: "${paths.datasets.journeydb_captions}"
+      shuffle: true
+      # Synthetic data pipeline creates (ε, z, c_y, c_x) on-the-fly using generator+VAE+CLIP
+
+# Inference defaults (useful for quick smoke tests during Stage 1)
+inference:
+  image_resolution: 512
+  use_self_guided_mask: true
+  use_user_mask_if_provided: true
+  aram_scales:
+    s_y: "${aram.s_y}"
+    s_edit: "${aram.s_edit}"
+    s_non_edit: "${aram.s_non_edit}"
+  mask_extractor:
+    blur_sigma: "${aram.mask.blur_sigma}"
+    soft_threshold: "${aram.mask.soft_threshold}"
+  precision:
+    dtype: "${system.dtype}"
+    autocast: "${system.autocast}"
+
+# Evaluation defaults (kept for consistency)
+eval:
+  piebench:
+    root: "${paths.datasets.piebench_root}"
+    use_gt_masks: false
+    batch_size: 1
+    num_workers: 2
+    metrics:
+      compute_psnr: true
+      compute_mse: true
+      compute_clip_whole: true
+      compute_clip_edited: true
+      runtime: true
+    clip_model:
+      provider: "openclip"
+      model_name: "ViT-L-14"
+      pretrained: "laion2b_s32b_b82k"
+
+# Logging
+logging:
+  project_name: "SwiftEdit"
+  run_name: "stage1"
+  version_log: true
+  save_config_snapshot: true
+  results_csv_dir: "results"
+  visualize_every: 1000

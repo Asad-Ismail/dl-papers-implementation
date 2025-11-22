@@ -1,0 +1,24 @@
+# Default hyperparameter configuration for FarSight MLLM
+model:
+  llama_model: "gpt2"  # Using GPT-2 as a lightweight alternative (meta-llama/Llama-2-7b-hf requires access token)
+  clip_model: "openai/clip-vit-base-patch32"
+data:
+  images_dir: "data/images"
+  videos_dir: "data/videos"
+  annotations_dir: "data/annotations"
+hyperparameters:
+  seq_len: 256              # maximum sequence length for decoder
+  decay_base: 1024          # base for computing σ = log(decay_base)/seq_len
+  p: 1.0                    # exponent for positional mask decay
+  batch_size: 2             # default batch size (reduced for CPU)
+  beam_size: 5              # default beam size for beam search
+  num_frames: 8             # number of video frames sampled per clip
+  max_gen_length: 128       # maximum tokens to generate (reduced for faster testing)
+  top_k: 50                 # top-k sampling
+  top_p: 0.95               # top-p (nucleus) sampling
+  temperature: 1.0          # sampling temperature
+  device: "cpu"             # device for computation (e.g., cuda or cpu)
+logging:
+  log_dir: "logs"
+  checkpoint_dir: "logs/checkpoints"
+  tensorboard_dir: "logs/tensorboard"

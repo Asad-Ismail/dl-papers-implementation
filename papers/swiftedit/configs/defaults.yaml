@@ -1,0 +1,212 @@
+# SwiftEdit default configuration
+# This file defines the global defaults for paths, models, hyperparameters,
+# training schedules, inference settings, ARaM scales, and evaluation.
+#
+# Notes:
+# - Paths should be updated to point to downloaded assets (see scripts/download_models.sh).
+# - The one-step generator defaults to SDXL-Turbo as a substitute for SwiftBrushv2 weights.
+# - All values can be overridden by stage-specific configs (stage1.yaml, stage2.yaml, inference.yaml).
+
+version: 1
+
+system:
+  device: "cuda"
+  dtype: "float16"          # Default mixed precision dtype
+  autocast: true             # Use torch.autocast for speed/memory
+  compile: false             # Enable torch.compile for speed (set true if PyTorch >= 2.1)
+  seed: 42                   # Global seed
+  deterministic: false       # Set true for fully deterministic (may reduce speed)
+
+paths:
+  # Base directory for assets; update according to scripts/download_models.sh output
+  assets_dir: "assets"
+  # If you ran scripts/download_models.sh, you can source assets/model_paths.env to populate these automatically.
+  sdxl_base_dir: "assets/sdxl-base"          # stabilityai/stable-diffusion-xl-base-1.0
+  sdxl_vae_dir: "assets/sdxl-vae"            # madebyollin/sdxl-vae-fp16-fix
+  openclip_dir: "assets/openclip"            # laion/CLIP-ViT-L-14-laion2B-s32B-b82K
+  one_step_gen_dir: "assets/one-step-gen"     # stabilityai/sdxl-turbo (SwiftBrushv2 substitute)
+
+  checkpoints_dir: "checkpoints"
+  logs_dir: "logs"
+
+  datasets:
+    journeydb_captions: "swiftedit/datasets/journeydb_captions.txt"
+    commoncanvas_root: "data/commoncanvas"   # Root folder with images and prompts.json/csv
+    piebench_root: "data/piebench"           # Root folder with PieBench samples
+
+models:
+  vae:
+    # SDXL-compatible VAE expected latent channels=4, scaling factor ~0.18215
+    type: "sdxl"
+    repo_dir: "${paths.sdxl_vae_dir}"
+    latent_channels: 4
+    scaling_factor: 0.18215
+    image_norm: "[-1,1]"  # Expected input normalization range
+    sample_size: 512       # Default image resolution for training/inference
+    dtype: "float16"
+
+  clip:
+    text:
+      provider: "openclip"
+      model_name: "ViT-L-14"
+      pretrained: "laion2b_s32b_b82k"
+      max_length: 77
+      dtype: "float32"  # Keep text encoder in fp32 for stability
+      freeze: true
+    image:
+      provider: "openclip"
+      model_name: "ViT-L-14"
+      pretrained: "laion2b_s32b_b82k"
+      dtype: "float32"
+      freeze: true
+
+  generator:
+    name: "swiftbrushv2"
+    repo_dir: "${paths.one_step_gen_dir}"   # SDXL-Turbo by default
+    # Latent resolution is proportional to image resolution; for SDXL VAE 512 -> latent 64x64
+    latent_channels: 4
+    text_embed_dim: 768        # CLIP text token dim (ViT-L/14 uses 768)
+    heads: 12                   # Attention heads (placeholder; depends on generator)
+    hidden_dim: 1536            # Internal hidden size (placeholder)
+    dtype: "float16"
+    requires_text_condition: true
+
+  ip_adapter:
+    enabled: true
+    projector:
+      in_dim: 768
+      out_dim: 768
+      num_tokens: 4
+    branch:
+      # Learnable keys/values for image conditioning
+      trainable: true              # Train in Stage 1
+      freeze_in_stage2: true
+      default_scale_sx: 1.0        # s_x for decoupled attention if ARaM disabled
+
+  inversion_net:
+    name: "invnet_f_theta"
+    init_from_generator: true
+    dtype: "float16"
+    ema:
+      enabled: true
+      decay: 0.999
+
+aram:
+  enabled: true
+  s_y: 1.0
+  s_edit: 0.3
+  s_non_edit: 1.5
+  mask:
+    blur_sigma: 1.0
+    soft_threshold: 0.0     # Keep continuous mask; if >0, apply soft clamp around threshold
+    clamp_min: 0.0
+    clamp_max: 1.0
+
+schedulers:
+  teacher:
+    unet_repo_dir: "${paths.sdxl_base_dir}"
+    scheduler_type: "DDPM"
+    num_train_timesteps: 1000
+    min_t: 0
+    max_t: 999
+    weighting: "uniform"    # Uniform sampling; alternative: "snr"
+
+training:
+  stage1:
+    enabled: true
+    batch_size: 4
+    num_iters: 100000
+    lr: 1.0e-5
+    weight_decay: 1.0e-4
+    grad_clip_norm: null
+    ema_decay: 0.999
+    log_every: 100
+    save_every: 2000
+    image_resolution: 512
+    losses:
+      lambda_stage1: 1.0    # L_stage1 = L_rec + lambda_stage1 * L_regr
+    freeze:
+      generator: true
+      vae: true
+      clip_text: true
+      clip_image: true
+      ip_adapter_branch: false  # Train image branch in stage1
+      projector: false          # Train projector in stage1
+      inversion_net: false      # Train Fθ
+    dataset:
+      name: "JourneyDB"
+      captions_path: "${paths.datasets.journeydb_captions}"
+      shuffle: true
+
+  stage2:
+    enabled: true
+    batch_size: 1
+    num_iters: 180000
+    lr: 1.0e-5
+    weight_decay: 0.0
+    grad_clip_norm: 1.0
+    ema_decay: 0.999
+    log_every: 100
+    save_every: 2000
+    image_resolution: 512
+    losses:
+      dists_weight: 1.0
+      regu_weight: 0.5        # L_regu = 0.5 w(t) ||ε̂ - ε_ϕ||^2
+      w_t_schedule: "uniform" # or "snr"
+      t_range: [250, 750]     # Optional mid-range timesteps for stability
+    freeze:
+      generator_ip: true
+      vae: true
+      clip_text: true
+      clip_image: true
+      ip_adapter_branch: true
+      projector: true
+      inversion_net: false
+    dataset:
+      name: "CommonCanvas"
+      root: "${paths.datasets.commoncanvas_root}"
+      prompts_file: "prompts.json"  # or prompts.csv
+      shuffle: true
+
+inference:
+  image_resolution: 512
+  use_self_guided_mask: true
+  use_user_mask_if_provided: true
+  aram_scales:
+    s_y: "${aram.s_y}"
+    s_edit: "${aram.s_edit}"
+    s_non_edit: "${aram.s_non_edit}"
+  mask_extractor:
+    blur_sigma: "${aram.mask.blur_sigma}"
+    soft_threshold: "${aram.mask.soft_threshold}"
+  precision:
+    dtype: "${system.dtype}"
+    autocast: "${system.autocast}"
+
+# Evaluation defaults for PieBench
+# PSNR/MSE are computed on the background region (1 - GT_mask)
+# CLIP-Whole on full image; CLIP-Edited on masked composite or crop
+
+eval:
+  piebench:
+    root: "${paths.datasets.piebench_root}"
+    use_gt_masks: false
+    batch_size: 1
+    num_workers: 2
+    metrics:
+      compute_psnr: true
+      compute_mse: true
+      compute_clip_whole: true
+      compute_clip_edited: true
+      runtime: true
+    clip_model:
+      provider: "openclip"
+      model_name: "ViT-L-14"
+      pretrained: "laion2b_s32b_b82k"
+
+logging:
+  project_name: "SwiftEdit"
+  version_log: true
+  save_config_snapshot: true
+  results_csv_dir: "results"
+  visualize_every: 1000

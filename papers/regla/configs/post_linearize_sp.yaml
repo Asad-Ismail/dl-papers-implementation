@@ -1,0 +1,69 @@
+# Post-linearization + Continual Pretraining configuration (SlimPajama, Pythia-160M)
+# This config is consumed by regla/train/post_linearize_and_continual.py.
+# Notes:
+# - vocab_size is typically overridden by the tokenizer loaded from HF.
+# - attn_type defaults to "hybrid" replacing ~50% SA layers with REGLA.
+
+model:
+  vocab_size: 50257
+  d_model: 768
+  n_layers: 12
+  n_heads: 12
+  d_head: 64
+  mlp_hidden_dim: 3072
+
+  # Attention configuration
+  attn_type: "hybrid"           # mix SA and REGLA layers
+  hybrid_sa_ratio: 0.5           # fraction of layers kept as softmax SA
+  hybrid_pattern: "alternate"    # alternate SA and REGLA by index
+  hybrid_map: null               # optional explicit per-layer mapping override
+
+  # Linear attention feature dimension
+  m: 64
+
+  # Positional encoding and norms
+  rope: true
+  max_seq_len: 2048
+  dropout: 0.1
+  norm_type: "rmsnorm"
+  norm_eps: 1e-5
+  stable_norm: "rmsnorm"
+  stable_norm_eps: 1e-5
+
+  # REGLA-specific toggles
+  use_sum_norm: false            # REGLA drops sum-norm by default
+  alpha_scaling: true            # enable variance-reduction scaling α
+  gate_share_across_heads: false
+
+  # Output settings
+  tie_embeddings: true
+  use_final_norm: true
+
+training:
+  dataset: "slimpajama"          # streaming SlimPajama-627B
+  seq_len: 2048
+  batch_size: 8
+  num_workers: 0                 # iterable dataset; workers typically 0
+  seed: 42
+
+  # Optimizer and schedule
+  steps: 50000
+  warmup_steps: 1000
+  lr: 0.0002
+  weight_decay: 0.01
+  betas: [0.9, 0.999]
+  grad_clip: 1.0
+  mixed_precision: "bf16"        # bf16 preferred on A100/H100
+
+  # Logging/IO
+  log_interval: 100
+  save_interval: 1000
+  eval_interval: 0               # optional; not used by continual pretraining loop
+  out_dir: "checkpoints/post_linearize_sp"
+  jsonl_path: "logs/post_linearize_sp.jsonl"
+  cache_dir: null
+
+hf:
+  model_name: "EleutherAI/pythia-160m"
+  tokenizer_name: "EleutherAI/pythia-160m"
+  use_auth_token: false

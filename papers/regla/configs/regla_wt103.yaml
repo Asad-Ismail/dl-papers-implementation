@@ -1,0 +1,62 @@
+# REGLA training/eval hyperparameters for WikiText-103
+# This config matches the reproduction plan defaults
+
+model:
+  vocab_size: 50257            # will be overridden by tokenizer if available
+  d_model: 768
+  n_layers: 12
+  n_heads: 12
+  d_head: 64
+  mlp_hidden_dim: 3072
+  attn_type: regla             # regla | softmax | fast_decay | la_elu1 | la_relu | hybrid
+  m: 64                        # feature dimension for linear attention
+  rope: true
+  max_seq_len: 2048
+  dropout: 0.1                 # block-level dropout for attn and MLP
+  norm_type: rmsnorm           # prenorm inside blocks: rmsnorm | layernorm
+  norm_eps: 1e-5
+  stable_norm: rmsnorm         # post-attention stabilization: rmsnorm | layernorm
+  stable_norm_eps: 1e-5
+  use_sum_norm: false          # REGLA drops sum normalization by default
+  alpha_scaling: true          # enable variance-reduction scaling alpha
+  gate_share_across_heads: false
+  tie_embeddings: true         # tie LM head to token embeddings
+  use_final_norm: true         # apply a final RMSNorm before LM head
+  # Hybrid mapping options (only used if attn_type == "hybrid")
+  hybrid_sa_ratio: 0.5
+  hybrid_pattern: alternate    # alternate | first_sa | last_sa
+  hybrid_map: null             # explicit mapping {layer_idx: "softmax"|"regla"}
+
+training:
+  dataset: wikitext-103        # use get_wt103_dataloaders
+  seq_len: 2048
+  batch_size: 8                # adjust by hardware; tokens per batch ≈ 8*2048
+  num_workers: 2
+  shuffle: true
+  seed: 42
+  steps: 50000
+  warmup_steps: 1000
+  lr: 0.0002                   # 2e-4
+  weight_decay: 0.01
+  betas: [0.9, 0.999]
+  grad_clip: 1.0
+  mixed_precision: bf16        # bf16 (preferred) | fp16 | fp32
+  eval_interval: 1000
+  save_interval: 1000
+  log_interval: 100
+  out_dir: checkpoints/regla_wt103
+  jsonl_path: logs/regla_wt103.jsonl
+  resume_checkpoint: null      # path to ckpt to resume from, or null
+  cache_dir: null              # datasets/tokenizer cache dir
+
+evaluation:
+  compute_ppl: true
+  eval_on: [valid, test]
+
+ablations:
+  # Recommended ablations to try; training script can selectively read these
+  m_values: [16, 32, 64, 96]
+  scaling: alpha               # alpha | inv_sqrt_m
+  stable_norm_on: true
+  sum_norm_on: false
+  gate_variant: refined        # refined | scalar | fast_decay

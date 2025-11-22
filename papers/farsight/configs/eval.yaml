@@ -1,0 +1,19 @@
+# Evaluation-specific configuration overrides
+data:
+  # Directory containing annotation JSON files
+  annotations_dir: "data/annotations"
+
+# Override hyperparameters for evaluation
+hyperparameters:
+  batch_size: 16
+  beam_size: 5
+
+# Paths to evaluation datasets
+evaluation:
+  datasets:
+    CHAIR: "data/annotations/chair.json"
+    POPE: "data/annotations/pope.json"
+    A_OKVQA: "/path/to/A-OKVQA/test.json"
+    VizWiz: "/path/to/VizWiz/test.json"
+    MSRVTT_QA: "/path/to/MSRVTT-QA/test.json"
+    MSVD_QA: "/path/to/MSVD-QA/test.json"

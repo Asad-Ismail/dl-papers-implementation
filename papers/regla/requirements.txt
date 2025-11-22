@@ -1,0 +1,27 @@
+# Core frameworks
+torch==2.2.2
+triton==2.2.0
+
+# HF ecosystem
+transformers==4.41.0
+tokenizers==0.15.2
+
+datasets==2.19.0
+accelerate==0.30.0
+
+# Numerics and plotting (for validations and figures)
+numpy==1.26.4
+scipy==1.12.0
+matplotlib==3.8.4
+seaborn==0.13.2
+
+einops==0.7.0
+
+# Evaluation harness
+lm-eval==0.4.2
+
+# Utilities and testing
+PyYAML==6.0.1
+pytest==8.2.1
+
+# Optional: CUDA toolkit is managed by PyTorch wheels; ensure driver supports CUDA 12.1/11.8.

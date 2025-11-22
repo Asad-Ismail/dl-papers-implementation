@@ -1,0 +1,32 @@
+# Model dimensions and layer counts for Pythia-160M-like architecture
+# Intended for consistency checks and as a reference when constructing
+# local TransformerLM instances aligned with EleutherAI/pythia-160m.
+
+model:
+  vocab_size: 50304        # tokenizer-dependent; will be overridden by tokenizer
+  d_model: 768
+  n_layers: 12
+  n_heads: 12
+  d_head: 64
+  mlp_hidden_dim: 3072     # 4x width MLP
+  attn_type: softmax        # baseline SA layout for reference
+  rope: true
+  max_seq_len: 2048
+  dropout: 0.1
+  norm_type: rmsnorm
+  norm_eps: 1.0e-5
+  stable_norm: rmsnorm
+  stable_norm_eps: 1.0e-5
+  tie_embeddings: true
+  use_final_norm: true
+
+hf:
+  model_name: EleutherAI/pythia-160m
+  tokenizer_name: EleutherAI/pythia-160m
+
+# Training section is intentionally minimal here; see
+# regla/configs/post_linearize_sp.yaml for a full continual pretraining setup.
+training:
+  seq_len: 2048
+  batch_size: 8
+  mixed_precision: bf16

@@ -1,0 +1,47 @@
+# Core framework
+# Pin to PyTorch 2.1+ and CUDA 12.x compatible stack
+# Users should install the appropriate CUDA build (e.g., torch==2.1.2+cu121) if needed
+torch>=2.1.0
+torchvision>=0.16.0
+# torchaudio optional
+
+# Diffusion ecosystem
+# SDXL teacher UNet and VAE wrappers
+# Note: diffusers 0.27 aligns with transformers 4.43
+# Install accelerate for efficient inference
+# safetensors for fast model weight loading
+# huggingface_hub for model downloads
+
+# Diffusers and related
+# Use ~= to allow minor updates within 0.27.x/4.43.x
+# Some users may need --upgrade to resolve dependency conflicts
+
+# Core diffusion libs
+accelerate>=0.33.0
+safetensors>=0.4.3
+diffusers~=0.27.0
+transformers~=4.43.0
+huggingface_hub>=0.23.0
+
+# CLIP and vision backbones
+open-clip-torch~=2.24.0
+timm>=0.9.0,<0.10.0
+
+# Perceptual loss
+DISTS-pytorch>=0.1.3
+
+# Array and image processing
+numpy>=1.25.0
+pillow>=10.3.0
+opencv-python>=4.9.0
+scikit-image>=0.22.0
+scipy>=1.11.0
+
+# Utilities
+pyyaml>=6.0.0
+tqdm>=4.66.0
+einops>=0.7.0
+pandas>=2.1.0
+
+# Optional plotting (not strictly required)
+matplotlib>=3.8.0

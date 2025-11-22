@@ -1,0 +1,106 @@
+# SwiftEdit Inference Configuration
+# This file overrides defaults.yaml for inference-only runs.
+# You can pass this to CLI tools (e.g., edit/inference.py) via --config swiftedit/configs/inference.yaml
+
+version: 1
+
+system:
+  device: "cuda"          # "cuda" or "cpu"
+  dtype: "float16"        # "float16" | "bfloat16" | "float32"
+  autocast: true           # enable AMP autocast for speed/memory
+  compile: false           # optionally torch.compile models
+  seed: 42
+  deterministic: false
+
+paths:
+  assets_dir: "assets"
+  sdxl_base_dir: "assets/sdxl-base"     # teacher (not used during pure inference)
+  sdxl_vae_dir: "assets/sdxl-vae"       # SDXL VAE directory
+  openclip_dir: "assets/openclip"       # OpenCLIP ViT-L/14
+  one_step_gen_dir: "assets/one-step-gen"  # one-step generator (e.g., sdxl-turbo)
+  checkpoints_dir: "checkpoints"        # where checkpoints (inversion net) are stored
+  logs_dir: "logs"
+
+models:
+  vae:
+    type: "sdxl"
+    repo_dir: "${paths.sdxl_vae_dir}"
+    latent_channels: 4
+    scaling_factor: 0.18215
+    image_norm: "[-1,1]"  # input space for VAE encode; decode will map back to [0,1]
+    sample_size: 512
+    dtype: "float16"
+  clip:
+    text:
+      provider: "openclip"
+      model_name: "ViT-L-14"
+      pretrained: "laion2b_s32b_b82k"
+      max_length: 77
+      dtype: "float32"
+      freeze: true
+    image:
+      provider: "openclip"
+      model_name: "ViT-L-14"
+      pretrained: "laion2b_s32b_b82k"
+      dtype: "float32"
+      freeze: true
+  generator:
+    name: "swiftbrushv2"
+    repo_dir: "${paths.one_step_gen_dir}"
+    latent_channels: 4
+    text_embed_dim: 768
+    heads: 12
+    hidden_dim: 1536
+    dtype: "float16"
+    requires_text_condition: true
+  ip_adapter:
+    enabled: true
+    projector:
+      in_dim: 768
+      out_dim: 768
+      num_tokens: 4
+    branch:
+      trainable: false     # inference: weights are frozen
+      freeze_in_stage2: true
+      default_scale_sx: 1.0
+  inversion_net:
+    name: "invnet_f_theta"
+    init_from_generator: true
+    dtype: "float16"
+    # Provide a default checkpoint path; can be overridden by CLI --inversion_ckpt
+    checkpoint: "${paths.checkpoints_dir}/inversion_net_stage2_ema.pt"
+
+aram:
+  enabled: true
+  s_y: 1.0
+  s_edit: 0.3
+  s_non_edit: 1.5
+  mask:
+    blur_sigma: 1.0
+    soft_threshold: 0.0
+    clamp_min: 0.0
+    clamp_max: 1.0
+
+inference:
+  image_resolution: 512
+  use_self_guided_mask: true
+  use_user_mask_if_provided: true
+  aram_scales:
+    s_y: "${aram.s_y}"
+    s_edit: "${aram.s_edit}"
+    s_non_edit: "${aram.s_non_edit}"
+  mask_extractor:
+    blur_sigma: "${aram.mask.blur_sigma}"
+    soft_threshold: "${aram.mask.soft_threshold}"
+  precision:
+    dtype: "${system.dtype}"
+    autocast: "${system.autocast}"
+  # Optional: direct override of the inversion checkpoint used by edit/inference.py
+  inversion_checkpoint: "${models.inversion_net.checkpoint}"
+
+logging:
+  project_name: "SwiftEdit-Inference"
+  version_log: true
+  save_config_snapshot: false
+  results_csv_dir: "results"
+  visualize_every: 0
