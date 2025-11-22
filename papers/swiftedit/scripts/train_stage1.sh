@@ -100,8 +100,14 @@ fi
 
 # Launch Python trainer
 set -x
-"$PYTHON_CMD" -m swiftedit.train.stage1.trainer_stage1 \
-  --defaults "$DEFAULTS" \
-  --config "$CONFIG" \
-  "${EXTRA_ARGS[@]}"
+if [ ${#EXTRA_ARGS[@]} -gt 0 ]; then
+  "$PYTHON_CMD" -m swiftedit.train.stage1.trainer_stage1 \
+    --defaults "$DEFAULTS" \
+    --config "$CONFIG" \
+    "${EXTRA_ARGS[@]}"
+else
+  "$PYTHON_CMD" -m swiftedit.train.stage1.trainer_stage1 \
+    --defaults "$DEFAULTS" \
+    --config "$CONFIG"
+fi
 set +x
