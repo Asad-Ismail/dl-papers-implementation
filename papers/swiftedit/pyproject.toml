@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "swiftedit"
+version = "0.1.0"
+description = "SwiftEdit: Lightning Fast Text-Guided Image Editing via One-Step Diffusion"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.1.0",
+    "torchvision>=0.16.0",
+    "diffusers>=0.27.0",
+    "transformers>=4.43.0",
+    "open-clip-torch>=2.24.0",
+    "timm>=0.9.0,<0.10.0",
+    "numpy",
+    "pillow",
+    "opencv-python",
+    "scikit-image",
+    "scipy",
+    "pyyaml",
+    "tqdm",
+    "einops",
+    "pandas",
+]
+
+[tool.setuptools]
+packages = ["swiftedit", "swiftedit.models", "swiftedit.train", "swiftedit.edit", "swiftedit.eval", "swiftedit.losses", "swiftedit.schedulers", "swiftedit.utils"]

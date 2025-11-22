@@ -45,20 +45,20 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv pip install -r requirements.txt
 
 # 2) Download all required model assets (SDXL base/vae, OpenCLIP, one-step generator)
-bash swiftedit/scripts/download_models.sh --all -o assets
+bash scripts/download_models.sh --all -o assets
 
 # 3) (Optional) Source the paths manifest to set env variables for scripts
 source assets/model_paths.env
 
 # 4) Run a simple smoke test for inference
-bash swiftedit/scripts/run_edit.sh \
+bash scripts/run_edit.sh \
   --image path/to/image.jpg \
   --src-prompt "a cute corgi in a park" \
   --edit-prompt "a cute corgi wearing sunglasses" \
   -o corgi_edit.png
 
 # 5) Evaluate on a small PieBench subset (after placing the dataset)
-bash swiftedit/scripts/eval_piebench.sh --piebench-root data/piebench
+bash scripts/eval_piebench.sh --piebench-root data/piebench
 ```
 
 
@@ -103,7 +103,7 @@ Hardware:
 ## Downloading Model Assets
 Use the provided script to fetch assets from Hugging Face and stage them under `assets/`:
 ```bash
-bash swiftedit/scripts/download_models.sh --all -o assets
+bash scripts/download_models.sh --all -o assets
 ```
 This downloads:
 - SDXL base UNet (teacher) – optional for SDS regularization
@@ -111,22 +111,23 @@ This downloads:
 - OpenCLIP ViT-L/14 – required
 - One-step generator – defaults to `stabilityai/sdxl-turbo` substitute
 
-A manifest `assets/model_paths.env` is created. You can `source` it or set paths in `swiftedit/configs/defaults.yaml`.
+A manifest `assets/model_paths.env` is created. You can `source` it or set paths in `configs/defaults.yaml`.
 
 
 ## Repo Structure
 ```
-swiftedit/
-  configs/           # YAMLs: defaults, stage1, stage2, inference
-  models/            # VAE, CLIP, generator, IP-Adapter, inversion, attention
-  losses/            # DISTS, PSNR/MSE, CLIP scores
-  schedulers/        # Teacher diffusion + noise scheduler wrapper
-  train/             # Stage 1/2 datasets and trainers
-  edit/              # Mask extractor, ARaM utils, inference pipeline
-  eval/              # PieBench dataset and evaluator
-  datasets/          # Dataset helpers and placeholders
-  scripts/           # Shell scripts for training, inference, evaluation, downloads
-  utils/             # Logging, checkpoints, timers, seeding, visualization
+.
+├── configs/           # YAMLs: defaults, stage1, stage2, inference
+├── scripts/           # Shell scripts for training, inference, evaluation, downloads
+├── swiftedit/         # Main package
+│   ├── models/        # VAE, CLIP, generator, IP-Adapter, inversion, attention
+│   ├── losses/        # DISTS, PSNR/MSE, CLIP scores
+│   ├── schedulers/    # Teacher diffusion + noise scheduler wrapper
+│   ├── train/         # Stage 1/2 datasets and trainers
+│   ├── edit/          # Mask extractor, ARaM utils, inference pipeline
+│   ├── eval/          # PieBench dataset and evaluator
+│   └── utils/         # Logging, checkpoints, timers, seeding, visualization
+└── requirements.txt
 ```
 
 
@@ -172,14 +173,14 @@ Objective: Train inversion network Fθ and IP-Adapter image branch on synthetic 
 Run:
 ```bash
 # Script wrapper
-bash swiftedit/scripts/train_stage1.sh \
-  -d swiftedit/configs/defaults.yaml \
-  -c swiftedit/configs/stage1.yaml
+bash scripts/train_stage1.sh \
+  -d configs/defaults.yaml \
+  -c configs/stage1.yaml
 
 # Or Python module
 python -m swiftedit.train.stage1.trainer_stage1 \
-  --defaults swiftedit/configs/defaults.yaml \
-  --config swiftedit/configs/stage1.yaml
+  --defaults configs/defaults.yaml \
+  --config configs/stage1.yaml
 ```
 Outputs:
 - Checkpoints under `checkpoints/` (configurable)
@@ -194,13 +195,13 @@ Objective: Train inversion network Fθ on real images using DISTS perceptual los
 
 Run:
 ```bash
-bash swiftedit/scripts/train_stage2.sh \
-  -d swiftedit/configs/defaults.yaml \
-  -c swiftedit/configs/stage2.yaml
+bash scripts/train_stage2.sh \
+  -d configs/defaults.yaml \
+  -c configs/stage2.yaml
 # Or
 python -m swiftedit.train.stage2.trainer_stage2 \
-  --defaults swiftedit/configs/defaults.yaml \
-  --config swiftedit/configs/stage2.yaml
+  --defaults configs/defaults.yaml \
+  --config configs/stage2.yaml
 ```
 Outputs:
 - Fθ checkpoints (with EMA) under `checkpoints/`
@@ -212,7 +213,7 @@ Edit an image with source and target prompts, using self-guided masks (or a prov
 
 Script:
 ```bash
-bash swiftedit/scripts/run_edit.sh \
+bash scripts/run_edit.sh \
   --image examples/corgi.jpg \
   --src-prompt "a cute corgi in a park" \
   --edit-prompt "a cute corgi wearing sunglasses" \
@@ -224,7 +225,7 @@ Python API:
 ```python
 import yaml, torch
 from swiftedit.edit.inference import edit_image
-cfg = yaml.safe_load(open('swiftedit/configs/inference.yaml'))
+cfg = yaml.safe_load(open('configs/inference.yaml'))
 res = edit_image(
     image='examples/corgi.jpg',
     prompt_src='a cute corgi in a park',
@@ -240,7 +241,7 @@ save_image(res['x_edit'], 'outputs/corgi_edit.png')
 ## Evaluation (PieBench)
 Load the PieBench dataset and compute metrics: PSNR/MSE on unedited background, CLIP-Whole, CLIP-Edited, and runtime.
 ```bash
-bash swiftedit/scripts/eval_piebench.sh \
+bash scripts/eval_piebench.sh \
   --piebench-root data/piebench \
   --inversion-ckpt checkpoints/stage2_ema.pt
 ```
@@ -251,10 +252,10 @@ Self-guided masks are used by default; you can enable GT masks during editing vi
 
 ## Configuration Overview
 Primary configs:
-- `swiftedit/configs/defaults.yaml` – global defaults for paths, models, training, ARaM, etc.
-- `swiftedit/configs/stage1.yaml` – overrides for Stage 1
-- `swiftedit/configs/stage2.yaml` – overrides for Stage 2
-- `swiftedit/configs/inference.yaml` – overrides for inference/evaluation
+- `configs/defaults.yaml` – global defaults for paths, models, training, ARaM, etc.
+- `configs/stage1.yaml` – overrides for Stage 1
+- `configs/stage2.yaml` – overrides for Stage 2
+- `configs/inference.yaml` – overrides for inference/evaluation
 
 Notes:
 - Some YAML values reference other keys using `${...}` placeholders; the current loader reads literal values. Scripts merge YAML files; if you need variable interpolation, resolve values in your driver code or provide absolute paths.
@@ -282,9 +283,9 @@ Implementation note: This reproduction applies ARaM at a fused conditioning stag
 
 
 ## Datasets
-- JourneyDB captions (Stage 1 synthetic): see placeholder `swiftedit/datasets/journeydb_captions.txt`. Provide ~40k captions, one per line (tab-separated first column also supported). Update `paths.datasets.journeydb_captions` in defaults.yaml as needed.
+- JourneyDB captions (Stage 1 synthetic): Provide ~40k captions, one per line (tab-separated first column also supported). Update `paths.datasets.journeydb_captions` in defaults.yaml as needed.
 - CommonCanvas (Stage 2 real): place images and a prompts JSON (default `prompts.json`) under `data/commoncanvas`. The dataset loader supports various manifest schemas (list of items or dict with "items").
-- PieBench (Evaluation): place the benchmark under `data/piebench`. Masks are optional for editing; evaluation uses GT masks to compute background PSNR/MSE. See `swiftedit/datasets/piebench_readme.md` for expected layout.
+- PieBench (Evaluation): place the benchmark under `data/piebench`. Masks are optional for editing; evaluation uses GT masks to compute background PSNR/MSE.
 
 
 ## Checkpoints and Logs
