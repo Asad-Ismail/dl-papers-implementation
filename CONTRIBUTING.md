@@ -4,14 +4,16 @@ Thank you for your interest in contributing to this project! This document provi
 
 ## Development Process
 
-### AI-Assisted Development with Human Oversight
+### DeepCode-Assisted Development with Human Oversight
 
-This project embraces a modern development workflow:
+This project embraces a modern development workflow powered by [DeepCode](https://github.com/HKUDS/DeepCode):
 
-1. **AI Bootstrapping**: Use AI coding tools to generate initial implementations
+1. **DeepCode Bootstrapping**: Use [DeepCode](https://github.com/HKUDS/DeepCode) to generate initial implementations from research papers
 2. **Human Review**: Carefully review and validate all generated code
 3. **Testing**: Verify results match the original paper
 4. **Documentation**: Document implementation details and deviations
+
+**About DeepCode**: DeepCode is an open-source agentic coding framework from HKU that achieves state-of-the-art performance on paper implementation tasks, surpassing both human experts and commercial code agents.
 
 ### Workflow Steps
 
@@ -25,7 +27,7 @@ This project embraces a modern development workflow:
    - Note any ambiguities or implementation details
 
 3. **Implementation Phase**
-   - Generate initial code using AI assistance
+   - Generate initial code using [DeepCode](https://github.com/HKUDS/DeepCode)
    - Structure code in a clean, modular way
    - Add comprehensive type hints and docstrings
    - Include inline comments for complex logic
@@ -145,7 +147,7 @@ paper-name/
 
 ### What to Review
 
-When reviewing AI-generated code:
+When reviewing DeepCode-generated code:
 
 - **Correctness**: Does it match the paper's algorithm?
 - **Efficiency**: Are there performance bottlenecks?
@@ -153,13 +155,14 @@ When reviewing AI-generated code:
 - **Reproducibility**: Are random seeds set appropriately?
 - **Documentation**: Is the code well-explained?
 
-### Common AI Code Issues
+### Common Code Issues to Check
 
-- Hallucinated APIs or functions
-- Incorrect tensor dimensions
-- Missing error handling
-- Over-complicated logic
-- Inadequate documentation
+Even with DeepCode's state-of-the-art performance, always verify:
+- API compatibility and function signatures
+- Correct tensor dimensions and data flow
+- Proper error handling and edge cases
+- Code complexity and maintainability
+- Comprehensive documentation and examples
 
 ## Questions?
 
