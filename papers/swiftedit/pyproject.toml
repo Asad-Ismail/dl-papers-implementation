@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=45", "wheel"]
+requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,23 +8,44 @@ version = "0.1.0"
 description = "SwiftEdit: Lightning Fast Text-Guided Image Editing via One-Step Diffusion"
 readme = "README.md"
 requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
 dependencies = [
     "torch>=2.1.0",
     "torchvision>=0.16.0",
-    "diffusers>=0.27.0",
-    "transformers>=4.43.0",
-    "open-clip-torch>=2.24.0",
+    "accelerate>=0.33.0",
+    "safetensors>=0.4.3",
+    "diffusers~=0.27.0",
+    "transformers~=4.43.0",
+    "huggingface_hub>=0.23.0",
+    "open-clip-torch~=2.24.0",
     "timm>=0.9.0,<0.10.0",
-    "numpy",
-    "pillow",
-    "opencv-python",
-    "scikit-image",
-    "scipy",
-    "pyyaml",
-    "tqdm",
-    "einops",
-    "pandas",
+    "DISTS-pytorch @ git+https://github.com/dingkeyan93/DISTS.git",
+    "numpy>=1.25.0",
+    "pillow>=10.3.0",
+    "opencv-python>=4.9.0",
+    "scikit-image>=0.22.0",
+    "scipy>=1.11.0",
+    "pyyaml>=6.0.0",
+    "tqdm>=4.66.0",
+    "einops>=0.7.0",
+    "pandas>=2.1.0",
+    "matplotlib>=3.8.0",
 ]
 
-[tool.setuptools]
-packages = ["swiftedit", "swiftedit.models", "swiftedit.train", "swiftedit.edit", "swiftedit.eval", "swiftedit.losses", "swiftedit.schedulers", "swiftedit.utils"]
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["swiftedit*"]
+exclude = ["edit*", "eval*", "train*", "losses*", "models*", "configs*", "schedulers*"]
+
+[tool.setuptools.package-data]
+swiftedit = ["*.yaml", "*.json"]
