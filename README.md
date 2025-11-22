@@ -21,9 +21,6 @@ Navigate to any paper implementation and follow its README for setup and usage i
 | **Regla** | [📁 papers/regla](./papers/regla) | - | ✅ |
 | **SwiftEdit** | [📁 papers/swiftedit](./papers/swiftedit) | - | ✅ |
 
-**Legend:** ✅ Implemented • 🚧 In Progress • 📋 Planned
- links
-
 ## Development
 
 This project uses **[DeepCode](https://github.com/HKUDS/DeepCode)** for bootstrapping paper implementations.
