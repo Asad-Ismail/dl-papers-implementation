@@ -159,45 +159,6 @@ Training implementation is planned for future updates. For now, this repository 
 1. Model architectures ready for training
 2. Inference pipeline components
 3. Evaluation metrics
-- Trainable: Fθ, IP-Adapter projector, IP-Adapter branch; others frozen
-- Batch size: 4 by default; iterations: 100k; EMA decay ≈ 0.999
-
-Run:
-```bash
-# Script wrapper
-bash scripts/train_stage1.sh \
-  -d configs/defaults.yaml \
-  -c configs/stage1.yaml
-
-# Or Python module
-python -m swiftedit.train.stage1.trainer_stage1 \
-  --defaults configs/defaults.yaml \
-  --config configs/stage1.yaml
-```
-Outputs:
-- Checkpoints under `checkpoints/` (configurable)
-- Logs under `logs/` with loss curves and optional recon samples
-
-### Stage 2 (Real)
-Objective: Train inversion network Fθ on real images using DISTS perceptual loss and SDS-style regularization.
-- Losses: L_perc = DISTS(x, x̂) + 0.5 w(t) ||ε̂ − ε_ϕ(z_t, t, c_y)||²
-- Trainable: Fθ only; encoders and IP-Adapter branch frozen
-- Batch size: 1; iterations: 180k; EMA decay ≈ 0.999
-- Teacher diffusion is optional; the provided stub returns zeros (acts as mild L2 on ε̂)
-
-Run:
-```bash
-bash scripts/train_stage2.sh \
-  -d configs/defaults.yaml \
-  -c configs/stage2.yaml
-# Or
-python -m swiftedit.train.stage2.trainer_stage2 \
-  --defaults configs/defaults.yaml \
-  --config configs/stage2.yaml
-```
-Outputs:
-- Fθ checkpoints (with EMA) under `checkpoints/`
-- Logs under `logs/` with DISTS and regularization curves
 
 
 ## Inference (Editing)
