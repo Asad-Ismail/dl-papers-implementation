@@ -12,6 +12,25 @@ Clean implementations of influential deep learning papers, bootstrapped with [De
 
 **Legend:** ✅ Reviewed  |  🔄 In Review  |  📋 Planned
 
+## Implementation Notes
+
+**Code Quality & Base Model Dependency:**
+Implementation accuracy depends heavily on the base model used for code generation. For instance, using GPT-4o-mini resulted in hallucinated components (e.g., additional positional encodings in Farsight that were not in the paper). Generated code often includes excessive validation logic (dimension checks, tensor conversions, error handling) that obscures the core algorithm. Human review focuses on extracting the essential paper logic from this scaffolding.
+
+**Current Limitations:**
+
+- Generated boilerplate prioritizes safety over readability; core algorithmic logic can be buried under defensive programming patterns
+- No user control over implementation preferences (package manager, test coverage, code style, etc.)
+
+**Future Improvements:**
+
+Key improvements that would greatly help DeepCode:
+
+- Standardize project structure and dependency management
+- Generate more concise, paper-focused code with minimal boilerplate
+- Better prompt engineering to reduce hallucinations and unnecessary abstractions
+- Allow user configuration for tooling preferences and code generation style
+
 ## License
 
 MIT License - See [LICENSE](LICENSE) file for details
