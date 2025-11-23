@@ -5,8 +5,10 @@ import torch
 
 try:
     import open_clip
-except Exception as e:  # pragma: no cover
+    _OPENCLIP_IMPORT_ERROR = None
+except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     open_clip = None
+    _OPENCLIP_IMPORT_ERROR = e
 
 
 def _str_dtype_to_torch(dtype_str: Optional[str]) -> torch.dtype:
@@ -48,9 +50,10 @@ class CLIPTextEncoder(torch.nn.Module):
     ) -> None:
         super().__init__()
         if open_clip is None:
-            raise ImportError(
-                "open-clip-torch is required. Please install open-clip-torch~=2.24.0"
-            )
+            msg = "open-clip-torch is required. Please install open-clip-torch~=2.24.0"
+            if _OPENCLIP_IMPORT_ERROR:
+                msg += f"\nOriginal error: {_OPENCLIP_IMPORT_ERROR}"
+            raise ImportError(msg)
 
         self.model_name = model_name
         self.pretrained = pretrained
@@ -76,10 +79,11 @@ class CLIPTextEncoder(torch.nn.Module):
                 pretrained_spec = candidates[0]
 
         # Create model and tokenizer
+        # Always create on CPU first to avoid CUDA initialization issues
         model, _, _ = open_clip.create_model_and_transforms(
             model_name,
             pretrained=pretrained_spec,
-            device=self.device,
+            device='cpu',
         )
         tokenizer = open_clip.get_tokenizer(model_name)
 
@@ -87,6 +91,8 @@ class CLIPTextEncoder(torch.nn.Module):
         # We keep the full model to use encode_text which handles masking & pooling correctly.
         self.clip_model = model
         self.clip_model.eval()
+        # Move to target device after creation
+        self.clip_model.to(self.device)
         self.tokenizer = tokenizer
 
         # Freezing

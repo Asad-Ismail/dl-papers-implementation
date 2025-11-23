@@ -1,37 +1,16 @@
 # Deep Learning Papers Implementation
 
-A collection of deep learning paper implementations, bootstrapped with [DeepCode](https://github.com/HKUDS/DeepCode) and validated through human-in-the-loop review to ensure correctness and best practices.
+Clean implementations of influential deep learning papers, bootstrapped with [DeepCode](https://github.com/HKUDS/DeepCode) and validated through human review.
 
-## Overview
-
-This repository contains clean implementations of influential deep learning papers. Each implementation is:
-
-- **DeepCode-Bootstrapped**: Initial code generated using [DeepCode](https://github.com/HKUDS/DeepCode), an open-source agentic coding framework
-- **Human-Verified**: Thoroughly reviewed and validated by a domain expert
-
-## Getting Started
-
-Navigate to any paper implementation and follow its README for setup and usage instructions.
-
-## Implemented Papers
+## Papers
 
 | Paper | Implementation | Paper Link | Status |
 |-------|----------------|------------|--------|
-| **Farsight** | [📁 papers/farsight](./papers/farsight) | - | ✅ |
-| **Regla** | [📁 papers/regla](./papers/regla) | - | ✅ |
-| **SwiftEdit** | [📁 papers/swiftedit](./papers/swiftedit) | - | ✅ |
+| **Farsight: Boosting Vision-Language Models with Long-Term Memory** | [📁 papers/farsight](./papers/farsight) | [Paper](https://arxiv.org/abs/2412.12425) | ✅ |
+| **REGLA: Representation-Enhanced Gated Linear Attention** | [📁 papers/regla](./papers/regla) | [Paper](https://arxiv.org/abs/2407.03741) | ✅ |
+| **SwiftEdit: Lightning Fast Text-Guided Image Editing** | [📁 papers/swiftedit](./papers/swiftedit) | [Paper (CVPR 2025)](https://openaccess.thecvf.com/content/CVPR2025/html/Nguyen_SwiftEdit_Lightning_Fast_Text-Guided_Image_Editing_via_One-Step_Diffusion_CVPR_2025_paper.html) | 🔄 |
 
-## Development
-
-This project uses **[DeepCode](https://github.com/HKUDS/DeepCode)** for bootstrapping paper implementations.
-
-### Contributing
-
-1. Fork the repository
-2. Implement the paper using [DeepCode](https://github.com/HKUDS/DeepCode)
-3. Review the Main implemntation of paper with papper.
-4. Add tests and documentation
-5. Submit a pull request
+**Legend:** ✅ Reviewed  |  🔄 In Review  |  📋 Planned
 
 ## License
 

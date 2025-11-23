@@ -31,9 +31,8 @@
 # Install uv if you haven't already
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Clone the repository
-git clone https://github.com/Asad-Ismail/regla.git
-cd regla
+# Navigate to the regla directory
+cd papers/regla
 
 # Create virtual environment and install dependencies
 uv venv
@@ -48,9 +47,8 @@ export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:256
 ### Using pip (Alternative)
 
 ```bash
-# Clone the repository
-git clone https://github.com/Asad-Ismail/regla.git
-cd regla
+# Navigate to the regla directory
+cd papers/regla
 
 # Create and activate virtual environment
 python -m venv .venv

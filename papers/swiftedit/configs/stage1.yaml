@@ -19,10 +19,10 @@ system:
 # Paths (override these if you placed assets elsewhere)
 paths:
   assets_dir: "assets"
-  sdxl_base_dir: "assets/sdxl-base"
-  sdxl_vae_dir: "assets/sdxl-vae"
-  openclip_dir: "assets/openclip"
-  one_step_gen_dir: "assets/one-step-gen"  # SwiftBrushv2 or SDXL-Turbo substitute
+  sdxl_base_dir: "assets/sdxl_base"
+  sdxl_vae_dir: "assets/sdxl_vae"
+  openclip_dir: "assets/openclip_vitl14"
+  one_step_gen_dir: "assets/generator_one_step"  # SwiftBrushv2 or SDXL-Turbo substitute
   checkpoints_dir: "checkpoints"
   logs_dir: "logs"
   datasets:

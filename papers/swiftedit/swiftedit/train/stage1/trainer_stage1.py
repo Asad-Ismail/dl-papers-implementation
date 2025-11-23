@@ -3,6 +3,7 @@ import sys
 import math
 import time
 import argparse
+import warnings
 from typing import Any, Dict, List, Optional
 
 import torch
@@ -36,6 +37,28 @@ def _deep_update(base: Dict[str, Any], upd: Dict[str, Any]) -> Dict[str, Any]:
     return base
 
 
+def _resolve_placeholders(cfg: Dict[str, Any]) -> Dict[str, Any]:
+    """Resolve ${paths.key} placeholders in config values."""
+    import re
+    paths = cfg.get("paths", {})
+    
+    def resolve_value(value):
+        if isinstance(value, str):
+            # Match ${paths.key} pattern
+            pattern = r'\$\{paths\.(\w+)\}'
+            matches = re.findall(pattern, value)
+            for match in matches:
+                if match in paths:
+                    value = value.replace(f'${{paths.{match}}}', str(paths[match]))
+        elif isinstance(value, dict):
+            return {k: resolve_value(v) for k, v in value.items()}
+        elif isinstance(value, list):
+            return [resolve_value(item) for item in value]
+        return value
+    
+    return {k: resolve_value(v) for k, v in cfg.items()}
+
+
 def _load_config(defaults_path: str, override_path: Optional[str] = None) -> Dict[str, Any]:
     if yaml is None:
         raise ImportError("pyyaml is required to load configuration files. Please install pyyaml.")
@@ -45,6 +68,7 @@ def _load_config(defaults_path: str, override_path: Optional[str] = None) -> Dic
         with open(override_path, 'r') as f:
             over = yaml.safe_load(f)
         cfg = _deep_update(cfg, over)
+    cfg = _resolve_placeholders(cfg)
     return cfg
 
 
@@ -95,6 +119,7 @@ def build_models(cfg: Dict[str, Any], device: torch.device):
         'dtype': cfg['models']['clip']['text'].get('dtype', 'float32'),
         'max_length': cfg['models']['clip']['text'].get('max_length', 77),
         'openclip_dir': cfg['paths'].get('openclip_dir', None),
+        'device': str(device),  # Pass device to avoid CUDA initialization
     }).to(device)
 
     img_enc = CLIPImageEncoder.from_config({
@@ -104,6 +129,7 @@ def build_models(cfg: Dict[str, Any], device: torch.device):
         'freeze': True,
         'dtype': cfg['models']['clip']['image'].get('dtype', 'float32'),
         'openclip_dir': cfg['paths'].get('openclip_dir', None),
+        'device': str(device),  # Pass device to avoid CUDA initialization
     }).to(device)
 
     vae = VAESDXL.from_config({
@@ -112,7 +138,7 @@ def build_models(cfg: Dict[str, Any], device: torch.device):
         'image_norm': cfg['models']['vae'].get('image_norm', '[-1,1]'),
         'sample_size': cfg['models']['vae'].get('sample_size', 512),
         'dtype': cfg['models']['vae'].get('dtype', sys_dtype),
-    }).to(device)
+    }, device=device).to(device)
     vae.eval()
     for p in vae.parameters():
         p.requires_grad = False
@@ -164,7 +190,27 @@ def build_models(cfg: Dict[str, Any], device: torch.device):
 
 
 def train_stage1(cfg: Dict[str, Any]):
-    device = torch.device(cfg.get('system', {}).get('device', 'cuda' if torch.cuda.is_available() else 'cpu'))
+    # Get device from config, with smart fallback
+    device_str = cfg.get('system', {}).get('device', None)
+    if device_str is not None:
+        req_device = str(device_str).lower()
+        if req_device == 'cuda' and not torch.cuda.is_available():
+            fallback = 'mps' if hasattr(torch.backends, 'mps') and torch.backends.mps.is_available() else 'cpu'
+            warnings.warn(f"CUDA requested in config but not available; falling back to {fallback.upper()}.")
+            device_str = fallback
+        elif req_device == 'mps' and not (hasattr(torch.backends, 'mps') and torch.backends.mps.is_available()):
+            fallback = 'cuda' if torch.cuda.is_available() else 'cpu'
+            warnings.warn(f"MPS requested in config but not available; falling back to {fallback.upper()}.")
+            device_str = fallback
+    if device_str is None:
+        # Auto-detect: prefer MPS > CUDA > CPU
+        if hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+            device_str = 'mps'
+        elif torch.cuda.is_available():
+            device_str = 'cuda'
+        else:
+            device_str = 'cpu'
+    device = torch.device(device_str)
     dtype_str = str(cfg.get('system', {}).get('dtype', 'float16')).lower()
     use_autocast = bool(cfg.get('system', {}).get('autocast', True))
 

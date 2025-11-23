@@ -29,10 +29,9 @@ project_root/
 
 We use [UV](https://github.com/astral-sh/uv) for fast, reliable Python package management.
 
-1. Clone this repository:
+1. Navigate to the farsight directory:
     ```bash
-    git clone https://github.com/Asad-Ismail/farsight-mllm
-    cd farsight-mllm
+    cd papers/farsight
     ```
 
 2. Run the setup script (automatically installs UV if needed, creates venv, and installs dependencies):

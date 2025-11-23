@@ -25,9 +25,11 @@ import torch
 try:
     from diffusers import DDPMScheduler
     _HAS_DIFFUSERS = True
-except Exception:
+    _DIFFUSERS_IMPORT_ERROR = None
+except (ModuleNotFoundError, ImportError) as e:
     DDPMScheduler = None  # type: ignore
     _HAS_DIFFUSERS = False
+    _DIFFUSERS_IMPORT_ERROR = e
 
 
 def _map_dtype_str(dtype_str: Optional[str]) -> Optional[torch.dtype]:
@@ -86,8 +88,11 @@ class TeacherDiffusion:
                 else:
                     # Create a default DDPM scheduler if no repo provided
                     self.scheduler = DDPMScheduler(num_train_timesteps=self.num_train_timesteps)
-            except Exception:
+            except Exception as e:
+                print(f"Warning: Failed to load scheduler from pretrained, using default. Error: {e}")
                 self.scheduler = DDPMScheduler(num_train_timesteps=self.num_train_timesteps)
+        elif DDPMScheduler is None and _DIFFUSERS_IMPORT_ERROR:
+            raise ImportError(f"diffusers is required but failed to import. Original error: {_DIFFUSERS_IMPORT_ERROR}")
 
         if self.scheduler is not None:
             # diffusers keeps alphas_cumprod as a numpy array or tensor; convert to torch

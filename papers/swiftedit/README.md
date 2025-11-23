@@ -47,6 +47,28 @@ python -c "import swiftedit; print('SwiftEdit package installed')"
 
 ## Quick Start - Training
 
+**First time setup:** Pre-download model weights to avoid long waits during training:
+
+```bash
+# Option 1: Use the download script (recommended)
+python scripts/download_models.py
+
+# Option 2: Manual download with wget (faster)
+mkdir -p ~/.cache/huggingface/hub
+cd ~/.cache/huggingface/hub
+
+# Download OpenCLIP ViT-L-14 (1.71GB)
+wget https://huggingface.co/laion/CLIP-ViT-L-14-laion2B-s32B-b82K/resolve/main/open_clip_pytorch_model.bin
+
+# Download SDXL VAE
+huggingface-cli download stabilityai/sdxl-vae --local-dir models--stabilityai--sdxl-vae
+
+# Download SDXL base model
+huggingface-cli download stabilityai/stable-diffusion-xl-base-1.0 --local-dir models--stabilityai--stable-diffusion-xl-base-1.0
+```
+
+**Run training:**
+
 ```bash
 # Stage 1 Training (Synthetic)
 bash scripts/train_stage1.sh -d configs/defaults.yaml -c configs/stage1.yaml

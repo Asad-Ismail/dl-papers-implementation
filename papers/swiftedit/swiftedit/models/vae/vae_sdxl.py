@@ -9,8 +9,10 @@ import torch.nn as nn
 
 try:
     from diffusers import AutoencoderKL
-except Exception as e:  # pragma: no cover - helpful error if diffusers missing
-    AutoencoderKL = None  # type: ignore
+    _DIFFUSERS_IMPORT_ERROR = None
+except (ModuleNotFoundError, ImportError) as e:
+    AutoencoderKL = None
+    _DIFFUSERS_IMPORT_ERROR = e 
 
 
 def _map_dtype_str(dtype_str: Optional[str]) -> Optional[torch.dtype]:
@@ -48,9 +50,10 @@ class VAESDXL(nn.Module):
     ) -> None:
         super().__init__()
         if AutoencoderKL is None:
-            raise ImportError(
-                "diffusers is required for VAESDXL. Install with `pip install diffusers~=0.27.0 safetensors`"
-            )
+            msg = "diffusers is required for VAESDXL. Install with `pip install diffusers~=0.27.0 safetensors`"
+            if _DIFFUSERS_IMPORT_ERROR:
+                msg += f"\nOriginal error: {_DIFFUSERS_IMPORT_ERROR}"
+            raise ImportError(msg)
 
         self.repo_dir = repo_dir
         self.scaling_factor = float(scaling_factor)

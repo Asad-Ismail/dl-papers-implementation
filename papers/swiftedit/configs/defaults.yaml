@@ -10,9 +10,9 @@
 version: 1
 
 system:
-  device: "cuda"
-  dtype: "float16"          # Default mixed precision dtype
-  autocast: true             # Use torch.autocast for speed/memory
+  device: "mps"              # Use "mps" for Apple Silicon, "cuda" for NVIDIA, "cpu" for CPU-only
+  dtype: "float32"           # MPS works best with float32; use "float16" for CUDA
+  autocast: false            # MPS doesn't fully support autocast yet
   compile: false             # Enable torch.compile for speed (set true if PyTorch >= 2.1)
   seed: 42                   # Global seed
   deterministic: false       # Set true for fully deterministic (may reduce speed)
@@ -21,10 +21,10 @@ paths:
   # Base directory for assets; update according to scripts/download_models.sh output
   assets_dir: "assets"
   # If you ran scripts/download_models.sh, you can source assets/model_paths.env to populate these automatically.
-  sdxl_base_dir: "assets/sdxl-base"          # stabilityai/stable-diffusion-xl-base-1.0
-  sdxl_vae_dir: "assets/sdxl-vae"            # madebyollin/sdxl-vae-fp16-fix
-  openclip_dir: "assets/openclip"            # laion/CLIP-ViT-L-14-laion2B-s32B-b82K
-  one_step_gen_dir: "assets/one-step-gen"     # stabilityai/sdxl-turbo (SwiftBrushv2 substitute)
+  sdxl_base_dir: "assets/sdxl_base"          # stabilityai/stable-diffusion-xl-base-1.0
+  sdxl_vae_dir: "assets/sdxl_vae"            # madebyollin/sdxl-vae-fp16-fix
+  openclip_dir: "assets/openclip_vitl14"     # laion/CLIP-ViT-L-14-laion2B-s32B-b82K
+  one_step_gen_dir: "assets/generator_one_step"  # stabilityai/sdxl-turbo (SwiftBrushv2 substitute)
 
   checkpoints_dir: "checkpoints"
   logs_dir: "logs"
@@ -43,7 +43,7 @@ models:
     scaling_factor: 0.18215
     image_norm: "[-1,1]"  # Expected input normalization range
     sample_size: 512       # Default image resolution for training/inference
-    dtype: "float16"
+    dtype: "float32"       # Use float32 for MPS, float16 for CUDA
 
   clip:
     text:

@@ -82,6 +82,28 @@ def _deep_update(base: Dict[str, Any], upd: Dict[str, Any]) -> Dict[str, Any]:
     return base
 
 
+def _resolve_placeholders(cfg: Dict[str, Any]) -> Dict[str, Any]:
+    """Resolve ${paths.key} placeholders in config values."""
+    import re
+    paths = cfg.get("paths", {})
+    
+    def resolve_value(value):
+        if isinstance(value, str):
+            # Match ${paths.key} pattern
+            pattern = r'\$\{paths\.(\w+)\}'
+            matches = re.findall(pattern, value)
+            for match in matches:
+                if match in paths:
+                    value = value.replace(f'${{paths.{match}}}', str(paths[match]))
+        elif isinstance(value, dict):
+            return {k: resolve_value(v) for k, v in value.items()}
+        elif isinstance(value, list):
+            return [resolve_value(item) for item in value]
+        return value
+    
+    return {k: resolve_value(v) for k, v in cfg.items()}
+
+
 def _load_config(defaults_path: str, override_path: Optional[str] = None) -> Dict[str, Any]:
     if yaml is None:
         raise RuntimeError("PyYAML not available; please install pyyaml to load configs.")
@@ -91,6 +113,7 @@ def _load_config(defaults_path: str, override_path: Optional[str] = None) -> Dic
         with open(override_path, 'r') as f:
             override = yaml.safe_load(f)
         cfg = _deep_update(cfg, override)
+    cfg = _resolve_placeholders(cfg)
     return cfg
 
 

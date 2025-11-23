@@ -62,11 +62,12 @@ class CLIPImageEncoder(nn.Module):
         pretrained_arg = local_pretrained if local_pretrained else pretrained
 
         # create_model_and_transforms returns (model, preprocess_train, preprocess_val)
+        # Always create on CPU first to avoid CUDA initialization issues
         self.model, _pre_t, _pre_v = open_clip.create_model_and_transforms(
-            model_name, pretrained=pretrained_arg, device=self.device
+            model_name, pretrained=pretrained_arg, device='cpu'
         )
         self.model = self.model.eval()
-        # Ensure model params are in float32 for stability
+        # Move to target device and ensure float32 for stability
         self.model.to(self.device, dtype=torch.float32)
 
         if freeze:
